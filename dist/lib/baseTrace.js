@@ -81,7 +81,7 @@ var BaseTrace = /** @class */ (function () {
             level: log.level,
             type: (0, util_1.dataTypes2BreadcrumbsType)(log.type),
             category: (0, util_1.dataCategory2BreadcrumbsCategory)(log.type),
-            message: log.message,
+            message: JSON.stringify(log.message),
             time: (0, util_1.getTimestamp)(),
         });
         this.debug && console.debug("log: ".concat(JSON.stringify(log)));
@@ -207,7 +207,7 @@ var BaseTrace = /** @class */ (function () {
                 type: common_1.BreadcrumbTypes.CODE_ERROR,
                 category: common_1.BreadcrumbsCategorys.Exception,
                 level: common_1.TraceDataSeverity.Error,
-                message: event.message,
+                message: JSON.stringify(event.message),
                 stack: event.error.stack,
                 time: (0, util_1.getTimestamp)()
             });
@@ -230,7 +230,7 @@ var BaseTrace = /** @class */ (function () {
                 type: common_1.BreadcrumbTypes.RESOURCE,
                 category: common_1.BreadcrumbsCategorys.Exception,
                 level: common_1.TraceDataSeverity.Warning,
-                message: event.message,
+                message: JSON.stringify(event.message),
                 time: (0, util_1.getTimestamp)()
             });
             this.queue.push(this.setTraceData(traceData));
@@ -279,7 +279,7 @@ var BaseTrace = /** @class */ (function () {
         });
         window.addEventListener('unhandledrejection', function (event) {
             // _t.saveError(event)
-            console.log(event);
+            console.log(event, event instanceof PromiseRejectionEvent);
             if (event instanceof PromiseRejectionEvent) {
                 var errorEvent = new ErrorEvent("promiseRejection", {
                     message: event.reason.toString(),
@@ -306,7 +306,7 @@ var BaseTrace = /** @class */ (function () {
                 level: common_1.TraceDataSeverity.Normal,
                 type: common_1.BreadcrumbTypes.CLICK,
                 category: common_1.BreadcrumbsCategorys.User,
-                message: innerHTML,
+                message: JSON.stringify(innerHTML),
                 time: (0, util_1.getTimestamp)()
             };
             _this.saveBreadcrumb(bc);
@@ -340,11 +340,13 @@ var BaseTrace = /** @class */ (function () {
     // 初始化实例
     BaseTrace.init = function (options) {
         var traceSdk = new BaseTrace(options);
+        // 监听全局报错信息
         traceSdk.onGlobalError();
         // traceSdk.onObserverResource()
         traceSdk.observer.observe({
             entryTypes: ["resource"],
         });
+        // 拦截Fetch
         window.fetch = (0, fetch_1.default)({
             pagePath: '',
             onError: function (error) {
@@ -382,10 +384,9 @@ var BaseTrace = /** @class */ (function () {
         });
         // 监听页面性能
         (0, webvitals_1.onVitals)(traceSdk.createPerfReport());
+        // 定时发送页面数据
         setInterval(function () {
-            console.log('[queue] traceSdk.queue: ', traceSdk.queue);
             var data = traceSdk.queue.shift();
-            console.log('[queue] data: ', data);
             if (data)
                 (0, send_1.sendByImg)(traceSdk.dsn, data);
         }, traceSdk.sendTimer);

@@ -19,7 +19,7 @@ export enum TraceDataSeverity {
   // 极其严重
   Critical = 'critical'
 }
-
+//
 export enum TraceTypes {
   // PVUV
   PAGE_VIEW = 'PageView',

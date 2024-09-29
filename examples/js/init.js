@@ -24,7 +24,7 @@
 // const init = require('../dist/lib/trace-sdk').default
 
 const instance = window.traceSdkInit({
-  dsn: 'http://localhost:2022/track.gif',
+  dsn: 'http://localhost:2022/track.gif', // 接受数据的接口（可自定义）
   appId: 'fontend-trace-cds-test'
 })
 

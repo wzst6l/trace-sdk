@@ -33,6 +33,12 @@
     <a href="/WebPerformance/index.html">跳到WebPerformance页面</a> -->
     <img id="loadError" src="" />
     <script>
+      window.addEventListener('error', (event) => {
+        console.info("error:----", event)
+      })
+      window.addEventListener('unhandledrejection', (event) => {
+        console.info("unhandledrejection:----", event)
+      })
       function codeError() {
         let a = {}
         a.split('/')
@@ -104,7 +110,7 @@
       }
       function logInByUserId() {
         if (!window.traceSdk) return
-        window.traceSdk.setUserId('10001')
+        window.traceSdk.setUserId('10005') //设置用户id
       }
       function updateImage() {
         setTimeout(() => {

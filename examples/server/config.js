@@ -1,4 +1,4 @@
-const { resolve } = require('path')
+const {resolve} = require('path')
 
 const port = 2022
 // const resolveDirname = (target) => resolve(__dirname, target)
@@ -39,3 +39,4 @@ const ServerUrls = {
 exports.port = port
 exports.FilePaths = FilePaths
 exports.ServerUrls = ServerUrls
+

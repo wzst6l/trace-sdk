@@ -1,7 +1,7 @@
-import { encode } from 'js-base64';
-import { getTimestamp, uuid } from "./util";
+import { encode } from 'js-base64'
+import { getTimestamp, uuid } from './util'
 
-const { fetch: originFetch } = window;
+const { fetch: originFetch } = window
 
 // 拦截fetch
 // window.fetch = async (...args: any) => {
@@ -17,7 +17,7 @@ export type OnFetchError = {
   status: number
   statusText: string
   method: 'POST' | 'GET'
-  body: any,
+  body: any
   elapsedTime: number
 }
 
@@ -29,66 +29,62 @@ export type OnBeforeProps = {
 
 export type InterceptFetchType = {
   pagePath: string
-  onError: (error: OnFetchError) => void;
-  onBefore?: (props: OnBeforeProps) => void;
-  onAfter?: (result: any) => void;
+  onError: (error: OnFetchError) => void
+  onBefore?: (props: OnBeforeProps) => void
+  onAfter?: (result: any) => void
 }
 
 // 拦截fetch
-const interceptFetch = ({
-  pagePath,
-  onError,
-  onBefore,
-  onAfter
-}: InterceptFetchType) => {
-
+const interceptFetch = ({ pagePath, onError, onBefore, onAfter }: InterceptFetchType) => {
   return async (...args: any) => {
-    let [url, options] = args;
+    let [url, options] = args
     const startTime = getTimestamp()
 
-    const traceId = uuid();
-    const traceSegmentId = uuid();
-    const appId = uuid();
+    const traceId = uuid()
+    const traceSegmentId = uuid()
+    const appId = uuid()
     const appVersion = 'v1.0.0'
 
+    // window.fetch 支持传入Request对象，或者直接传入url
     if (Object.prototype.toString.call(args[0]) === '[object Request]') {
-      url = new URL(url.url);
+      url = new URL(url.url)
     } else {
       if (args[0].startsWith('http://') || args[0].startsWith('https://')) {
-        url = new URL(args[0]);
+        url = new URL(args[0])
       } else if (args[0].startsWith('//')) {
-        url = new URL(`${window.location.protocol}${args[0]}`);
+        url = new URL(`${window.location.protocol}${args[0]}`)
       } else {
-        url = new URL(window.location.href);
-        url.pathname = args[0];
+        url = new URL(window.location.href)
+        url.pathname = args[0]
       }
     }
 
-    const traceIdStr = String(encode(traceId));
-    const segmentId = String(encode(traceSegmentId));
-    const service = String(encode(appId));
-    const instance = String(encode(appVersion));
-    const endpoint = String(encode(pagePath));
-    const peer = String(encode(url.host));
-    const index = 1;
-    const values = `${1}-${traceIdStr}-${segmentId}-${index}-${service}-${instance}-${endpoint}-${peer}`;
+    const traceIdStr = String(encode(traceId))
+    const segmentId = String(encode(traceSegmentId))
+    const service = String(encode(appId))
+    const instance = String(encode(appVersion))
+    const endpoint = String(encode(pagePath))
+    const peer = String(encode(url.host))
+    const index = 1
+    const values = `${1}-${traceIdStr}-${segmentId}-${index}-${service}-${instance}-${endpoint}-${peer}`
 
     if (!options) {
-      options = {};
+      options = {}
     }
     if (!options.headers) {
-      options.headers = {};
+      options.headers = {}
     }
-    options.headers['sw8'] = values;
+    options.headers['sw8'] = values
 
-    let res;
+    let res
     try {
-      onBefore && onBefore({
-        url,
-        method: options.method,
-        options
-      })
-      res = await originFetch(url, options);
+      onBefore &&
+        onBefore({
+          url,
+          method: options.method,
+          options
+        })
+      res = await originFetch(url, options)
 
       onAfter && onAfter(res)
     } catch (err) {
@@ -99,7 +95,7 @@ const interceptFetch = ({
           statusText: res.statusText,
           method: options.method,
           body: options.body,
-          elapsedTime: getTimestamp() - startTime,
+          elapsedTime: getTimestamp() - startTime
         })
       } else {
         throw err
@@ -112,7 +108,7 @@ const interceptFetch = ({
         statusText: res.statusText,
         method: options.method,
         body: options.body,
-        elapsedTime: getTimestamp() - startTime,
+        elapsedTime: getTimestamp() - startTime
       })
     }
 

@@ -1,22 +1,39 @@
-
-import { BaseTraceInterface } from './core/interface';
-import { onVitals, mapMetric, generateUniqueId } from './core/webvitals';
-import interceptFetch, { OnBeforeProps, OnFetchError } from './core/fetch';
-import { dataCategory2BreadcrumbsCategory, dataTypes2BreadcrumbsType, getPerfLevel, getTimestamp, getTraceDataLevel, getTraceDataType, hashCode, isResourceTarget, uuid } from './core/util';
-import { BreadcrumbTypes, BreadcrumbsCategorys, BrowserType, TraceClientTypes, TraceDataSeverity, TraceDataTypes, TraceLevelType, TraceTypes } from './typings/common'
-import { getFingerprintId } from './core/fingerprint';
-import { sendByImg } from './core/send';
+import { BaseTraceInterface } from './core/interface'
+import { onVitals, mapMetric, generateUniqueId } from './core/webvitals'
+import interceptFetch, { OnBeforeProps, OnFetchError } from './core/fetch'
+import {
+  dataCategory2BreadcrumbsCategory,
+  dataTypes2BreadcrumbsType,
+  getPerfLevel,
+  getTimestamp,
+  getTraceDataLevel,
+  getTraceDataType,
+  hashCode,
+  isResourceTarget,
+  uuid
+} from './core/util'
+import {
+  BreadcrumbTypes,
+  BreadcrumbsCategorys,
+  BrowserType,
+  TraceClientTypes,
+  TraceDataSeverity,
+  TraceDataTypes,
+  TraceLevelType,
+  TraceTypes
+} from './typings/common'
+import { getFingerprintId } from './core/fingerprint'
+import { sendByImg } from './core/send'
 
 export interface TraceOptions {
-  perfOnSend: () => void;
-  perfBeforeSend: () => void;
+  perfOnSend: () => void
+  perfBeforeSend: () => void
   dsn: string
   debug?: boolean
   appId: string
 }
 
 export class BaseTrace implements BaseTraceInterface {
-
   // 日志上报后端API
   public dsn: string = ''
   // 页面ID
@@ -33,7 +50,7 @@ export class BaseTrace implements BaseTraceInterface {
   public appId = ''
 
   // 是否开启debug状态
-  public debug = true;
+  public debug = true
 
   // 性能日志数据
   public perfData: TracePerf = {
@@ -74,18 +91,16 @@ export class BaseTrace implements BaseTraceInterface {
     this.fpId = getFingerprintId('TraceCourse')
 
     this.observer = new PerformanceObserver((list, observer) => {
-      list.getEntries().forEach((entry) => {
-        this.debug && console.debug(`name    : ${entry.name}`);
-        this.debug && console.debug(`type    : ${entry.entryType}`);
-        this.debug && console.debug(`duration: ${entry.duration}`);
+      list.getEntries().forEach(entry => {
+        this.debug && console.debug(`name    : ${entry.name}`)
+        this.debug && console.debug(`type    : ${entry.entryType}`)
+        this.debug && console.debug(`duration: ${entry.duration}`)
         if (entry.entryType === 'resource') {
           this.handleObserverResource(entry as PerformanceResourceTiming)
         }
-      });
-    });
+      })
+    })
   }
-
-
 
   public log(log: TraceDataLog) {
     this.saveBreadcrumb({
@@ -93,10 +108,10 @@ export class BaseTrace implements BaseTraceInterface {
       level: log.level,
       type: dataTypes2BreadcrumbsType(log.type),
       category: dataCategory2BreadcrumbsCategory(log.type),
-      message: log.message,
-      time: getTimestamp(),
+      message: JSON.stringify(log.message),
+      time: getTimestamp()
     })
-    this.debug && console.debug(`log: ${JSON.stringify(log)}`);
+    this.debug && console.debug(`log: ${JSON.stringify(log)}`)
     this.send(log)
   }
 
@@ -108,7 +123,7 @@ export class BaseTrace implements BaseTraceInterface {
       message,
       time: getTimestamp(),
       dataId: hashCode(`${message}|${tag || ''}`),
-      tag,
+      tag
     })
   }
 
@@ -120,7 +135,7 @@ export class BaseTrace implements BaseTraceInterface {
       message,
       time: getTimestamp(),
       dataId: hashCode(`${message}|${tag || ''}`),
-      tag,
+      tag
     })
   }
 
@@ -132,7 +147,7 @@ export class BaseTrace implements BaseTraceInterface {
       message,
       time: getTimestamp(),
       dataId: hashCode(`${message}|${tag || ''}`),
-      tag,
+      tag
     })
   }
 
@@ -169,9 +184,9 @@ export class BaseTrace implements BaseTraceInterface {
       clientType: TraceClientTypes.BROWSER_H5,
       url: document.URL,
       pid: this.pageId,
-      uid: this.uid,
+      uid: this.uid
     }
-    this.debug && console.log('[setTraceData]traceData: ',traceData)
+    this.debug && console.log('[setTraceData]traceData: ', traceData)
     return traceData
   }
 
@@ -181,12 +196,13 @@ export class BaseTrace implements BaseTraceInterface {
   }
 
   createPerfReport() {
-    const report = (metric) => {
-      this.perfData = { ...this.perfData, ...mapMetric(metric) };
-    };
+    const report = metric => {
+      this.perfData = { ...this.perfData, ...mapMetric(metric) }
+    }
 
     setTimeout(() => {
-      const supportedEntryTypes = (PerformanceObserver && PerformanceObserver.supportedEntryTypes) || []
+      const supportedEntryTypes =
+        (PerformanceObserver && PerformanceObserver.supportedEntryTypes) || []
       const isLatestVisibilityChangeSupported = supportedEntryTypes.indexOf('layout-shift') !== -1
 
       if (isLatestVisibilityChangeSupported) {
@@ -199,10 +215,14 @@ export class BaseTrace implements BaseTraceInterface {
         }
         addEventListener('visibilitychange', onVisibilityChange, true)
       } else {
-        addEventListener('pagehide', () => {
-          console.log('pagehide', this.perfData)
-          this.send(this.perfData)
-        }, { capture: true, once: true })
+        addEventListener(
+          'pagehide',
+          () => {
+            console.log('pagehide', this.perfData)
+            this.send(this.perfData)
+          },
+          { capture: true, once: true }
+        )
       }
     })
 
@@ -211,8 +231,8 @@ export class BaseTrace implements BaseTraceInterface {
 
   public saveError(event: ErrorEvent) {
     console.log('[onResourceError] event: ', event)
-    const target = event.target || event.srcElement;
-    const isResTarget = isResourceTarget(target as HTMLElement);
+    const target = event.target || event.srcElement
+    const isResTarget = isResourceTarget(target as HTMLElement) // 是否是html的资源类标签
 
     if (!isResTarget) {
       const traceData: TraceTypeData = {
@@ -230,15 +250,18 @@ export class BaseTrace implements BaseTraceInterface {
         type: BreadcrumbTypes.CODE_ERROR,
         category: BreadcrumbsCategorys.Exception,
         level: TraceDataSeverity.Error,
-        message: event.message,
+        message: JSON.stringify(event.message),
         stack: event.error.stack,
         time: getTimestamp()
       })
       this.queue.push(this.setTraceData(traceData))
     } else {
-      const url = (target as HTMLElement).getAttribute('src') || (target as HTMLElement).getAttribute('href')
+      const url =
+        (target as HTMLElement).getAttribute('src') || (target as HTMLElement).getAttribute('href')
       const traceData: TraceTypeData = {
-        dataId: hashCode(`${(target as HTMLElement).nodeName.toLowerCase()}-${event.message}${url}`),
+        dataId: hashCode(
+          `${(target as HTMLElement).nodeName.toLowerCase()}-${event.message}${url}`
+        ),
         name: 'resource-load-error',
         level: TraceDataSeverity.Warning,
         message: event.message,
@@ -252,12 +275,11 @@ export class BaseTrace implements BaseTraceInterface {
         type: BreadcrumbTypes.RESOURCE,
         category: BreadcrumbsCategorys.Exception,
         level: TraceDataSeverity.Warning,
-        message: event.message,
+        message: JSON.stringify(event.message),
         time: getTimestamp()
       })
       this.queue.push(this.setTraceData(traceData))
     }
-
   }
 
   public handleObserverResource(entry: PerformanceResourceTiming) {
@@ -265,18 +287,19 @@ export class BaseTrace implements BaseTraceInterface {
       let level = TraceDataSeverity.Info
       if (entry.duration > 1000 && entry.duration < 1500) {
         level = TraceDataSeverity.Warning
-      } else  if (entry.duration > 1500) {
+      } else if (entry.duration > 1500) {
         level = TraceDataSeverity.Error
       }
-      entry.duration > 1000 && this.resources.push({
-        url: entry.name,
-        name: `${entry.entryType}-duration-${entry.initiatorType}`,
-        type: TraceDataTypes.PERF,
-        level,
-        message: `duration:${Math.round(entry.duration)}`,
-        time: getTimestamp(),
-        dataId: hashCode(`${entry.entryType}-${entry.name}`),
-      })
+      entry.duration > 1000 &&
+        this.resources.push({
+          url: entry.name,
+          name: `${entry.entryType}-duration-${entry.initiatorType}`,
+          type: TraceDataTypes.PERF,
+          level,
+          message: `duration:${Math.round(entry.duration)}`,
+          time: getTimestamp(),
+          dataId: hashCode(`${entry.entryType}-${entry.name}`)
+        })
     }
   }
 
@@ -308,30 +331,30 @@ export class BaseTrace implements BaseTraceInterface {
   public onGlobalError() {
     const _t = this
     console.log('onGlobalError')
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       _t.saveError(event)
     })
     window.addEventListener('unhandledrejection', (event: any) => {
       // _t.saveError(event)
-      console.log(event)
+      console.log(event, event instanceof PromiseRejectionEvent)
       if (event instanceof PromiseRejectionEvent) {
-        const errorEvent = new ErrorEvent("promiseRejection", {
+        const errorEvent = new ErrorEvent('promiseRejection', {
           message: event.reason.toString(),
           // filename: event.filename,
           // lineno: event.lineno,
           // colno: event.colno,
-          error: event.reason,
-        });
-        _t.saveError(errorEvent);
+          error: event.reason
+        })
+        _t.saveError(errorEvent)
       } else if (event instanceof ErrorEvent) {
-        _t.saveError(event);
+        _t.saveError(event)
       }
     })
   }
 
   public onGlobalClick() {
     const _t = this
-    window.addEventListener('click', (event) => {
+    window.addEventListener('click', event => {
       const target = event.target as HTMLElement
       const innerHTML = target.innerHTML
       const bc: TraceAction = {
@@ -339,7 +362,7 @@ export class BaseTrace implements BaseTraceInterface {
         level: TraceDataSeverity.Normal,
         type: BreadcrumbTypes.CLICK,
         category: BreadcrumbsCategorys.User,
-        message: innerHTML,
+        message: JSON.stringify(innerHTML),
         time: getTimestamp()
       }
       this.saveBreadcrumb(bc)
@@ -378,16 +401,18 @@ export class BaseTrace implements BaseTraceInterface {
   public static init(options: TraceOptions): BaseTrace {
     const traceSdk = new BaseTrace(options)
 
+    // 监听全局报错信息
     traceSdk.onGlobalError()
+
     // traceSdk.onObserverResource()
     traceSdk.observer.observe({
-      entryTypes: ["resource"],
-    });
+      entryTypes: ['resource']
+    })
 
     // 拦截Fetch
     window.fetch = interceptFetch({
       pagePath: '',
-      onError: (error) => {
+      onError: error => {
         traceSdk.onFetchError(error)
       },
       onBefore: (props: OnBeforeProps) => {
@@ -424,11 +449,9 @@ export class BaseTrace implements BaseTraceInterface {
     // 监听页面性能
     onVitals(traceSdk.createPerfReport())
 
-
+    // 定时发送页面数据
     setInterval(() => {
-      console.log('[queue] traceSdk.queue: ', traceSdk.queue)
       const data = traceSdk.queue.shift()
-      console.log('[queue] data: ', data)
       if (data) sendByImg(traceSdk.dsn, data)
     }, traceSdk.sendTimer)
 
